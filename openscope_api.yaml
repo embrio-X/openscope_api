@@ -1,0 +1,299 @@
+openapi: 3.0.3
+info:
+  title: OpenScope - OpenAPI 3.0
+  version: 1.0.0
+servers:
+  - url: http://100.120.143.10:3000/api/v1
+paths:
+  /camera/capture:
+    get:
+      tags:
+        - camera
+      summary: Capture microscope image
+      description: This endpoint captures a microscope image and returns the ID of the image as a response. The image can be fetched using the ID through the Fetch API. The capture command is queued in the server, so there may be a delay before the generated image can be fetched.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                required:
+                  - id
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: '221123_132707_3112708'    
+  /camera/fetch/{id_}:
+    get:
+      tags:
+        - camera
+      summary: Retrieve microscope image
+      description: This endpoint retrieves the microscope image using the ID returned by the /camera/capture endpoint.
+      parameters:
+      - name: id_
+        in: path
+        description: ID of image to return
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+          # TODO: return image here
+            application/json:
+              schema:
+                required:
+                  - command
+                  - isAccepted
+                type: object
+                properties:
+                  command:
+                    type: string
+                    example: 'fetch'
+                  isAccepted:
+                    type: boolean
+                    example: true   
+        '400':
+          description: file not found 
+  /stage/move_to/{coord}:
+    get:
+      tags:
+        - stage
+      summary: Move motor stage to specified coordinates
+      description: This endpoint moves the motor stage to the specified coordinates in either stage or motor coordinate systems. The destination coordinates are specified using the x, y, and z parameters.
+
+      # summary: 指定の座標までステージを移動
+      # description: stage座標系またはmotor座標系で、移動先を指定できる。移動先の座標はx, y, zで指定。
+      parameters:
+        - name: coord
+          in: path
+          description: Coordinate system to use (stage_mm or motor_gcode)
+          required: true
+          schema:
+            type: string
+        - name: x
+          in: query
+          description: x-coordinate
+          required: true
+          schema:
+            type: number
+        - name: y
+          in: query
+          description: y-coordinate
+          required: true
+          schema:
+            type: number
+        - name: z
+          in: query
+          description: z-coordinate
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                required:
+                  - command
+                  - isAccepted
+                type: object
+                properties:
+                  command:
+                    type: string
+                    example: 'move_to'
+                  isAccepted:
+                    type: boolean
+                    example: true       
+        '400':
+          description: Invalid parameter x, y, z
+  /stage/current_position:
+    get:
+      tags:
+        - stage
+      summary: Retrieve current motor stage position
+      description: This endpoint retrieves the current position of the motor stage in both stage and motor coordinate systems.
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - isAccepted
+                properties:
+                  isAccepted:
+                    type: string
+                    example: '221123_132707_3112708'   
+                  stage_mm:
+                    type: array
+                    items:
+                      type: number
+                    example: [1.2, 1.2, 1.3]
+                  grbl_gcode:
+                    type: array
+                    items: 
+                      type: number
+                    example: [10.2, 13.2, 0.4]
+  /points/write/{file_name}:
+    put:
+      tags:
+        - points
+      # summary: 観察点群を保存
+      # description: jsonを送信して、観察点群としてサーバー内にfile_nameで保存する
+      summary: Save observation points
+      description: This endpoint saves a set of observation points as a JSON file on the server. The JSON data should be sent in the request body.
+      parameters:
+      - name: file_name
+        in: path
+        description: file name to save the points
+        required: true
+        schema:
+          type: string
+      operationId: placeOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Points'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                required:
+                  - command
+                  - isAccepted
+                type: object
+                properties:
+                  command:
+                    type: string
+                    example: 'write'
+                  isAccepted:
+                    type: boolean
+                    example: true    
+        '400':
+          description: Invalid points json
+  /points/read/{file_name}:
+    get:
+      tags:
+        - points
+      summary: Read observation points
+      description: This endpoint retrieves a set of observation points from the server using the specified file name.
+      parameters:
+      - name: file_name
+        in: path
+        description: file name to save the points
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Points'
+        '400':
+          description: Invalid points json
+  /settings/tf/verification/{tf_name}:
+    get:
+      tags:
+        - settings
+      summary: Verify stage and microscope positions after startup
+      description: This endpoint moves the stage and microscope to several verification points in a specified order for visual verification that they are not significantly misaligned. For example, in the current 96-well plate setup, the points are B1, G1, and B9.
+      parameters:
+      - name: tf_name
+        in: path
+        description: file name to save the points
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                required:
+                  - command
+                  - isAccepted
+                type: object
+                properties:
+                  command:
+                    type: string
+                    example: 'verification'
+                  isAccepted:
+                    type: boolean
+                    example: true          
+        '400':
+          description: Invalid points json
+  /settings/homing:
+    get:
+      tags:
+        - settings
+      summary: Initialize motor coordinate system for the stage
+      description: This endpoint initializes the motor coordinate system for the stage after power-on.
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                required:
+                  - command
+                  - isAccepted
+                type: object
+                properties:
+                  command:
+                    type: string
+                    example: 'homing'
+                  isAccepted:
+                    type: boolean
+                    example: true    
+
+components:
+  schemas:
+    Points:
+      type: object
+      required:
+        - stage_name
+        - stage_mm
+      properties:
+        stage_mm:
+          type: string
+          example: proto1
+        stage_name:
+          type: object
+          example: {"A1": [ -0.9,0.0,0 ]}
+    # ImageId:
+    #   required:
+    #     - id
+    #   type: object
+    #   properties:
+    #     id:
+    #       type: string
+    #       example: '221123_132707_3112708'
+  # requestBodies:
+    # Pet:
+    #   description: Pet object that needs to be added to the store
+    #   content:
+    #     application/json:
+    #       schema:
+    #         $ref: '#/components/schemas/Pet'
+    #     application/xml:
+    #       schema:
+    #         $ref: '#/components/schemas/Pet'
+    # UserArray:
+    #   description: List of user object
+    #   content:
+    #     application/json:
+    #       schema:
+    #         type: array
+    #         items:
+    #           $ref: '#/components/schemas/User'
