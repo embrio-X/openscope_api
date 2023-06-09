@@ -3,8 +3,52 @@ info:
   title: OpenScope - OpenAPI 3.0
   version: 1.0.0
 servers:
-  - url: http://100.120.143.10:3000/api/v1
+  - url: http://192.168.3.27:3000/api/v1
 paths:
+  /led/on:
+    get:
+      tags:
+        - light
+      summary: turn on light of the microscope
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                required:
+                  - command
+                  - isAccepted
+                type: object
+                properties:
+                  command:
+                    type: string
+                    example: 'led_on'
+                  isAccepted:
+                    type: boolean
+                    example: true    
+  /led/off:
+    get:
+      tags:
+        - light
+      summary: turn off light of the microscope
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                required:
+                  - command
+                  - isAccepted
+                type: object
+                properties:
+                  command:
+                    type: string
+                    example: 'led_off'
+                  isAccepted:
+                    type: boolean
+                    example: true    
   /camera/capture:
     get:
       tags:
