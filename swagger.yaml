@@ -300,6 +300,28 @@ paths:
                   isAccepted:
                     type: boolean
                     example: true    
+  /healthcheck:
+    get:
+      tags:
+        - health check
+      summary: healthcheck api server
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                required:
+                  - command
+                  - isAccepted
+                type: object
+                properties:
+                  command:
+                    type: string
+                    example: 'homing'
+                  isAccepted:
+                    type: boolean
+                    example: true    
 
 components:
   schemas:
